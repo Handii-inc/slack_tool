@@ -2,7 +2,8 @@ import requests
 import json
 import sys
 
-def get_url(suffix) :
+
+def get_url(suffix):
     """
     get slack api url.
 
@@ -12,16 +13,18 @@ def get_url(suffix) :
     ret = '/'.join([base_url, suffix])
     return ret
 
+
 def to_json(response):
     """
     convert requests result to json object.
-    
+
     :param response: requests result object.
     :return: returns json object.
     """
     return json.loads(response.text)
 
-def create_channel_id_mapper(token) :
+
+def create_channel_id_mapper(token):
     """
     create chennel id mapper. 
     almost slack api requires channel id not channel name.
@@ -32,15 +35,17 @@ def create_channel_id_mapper(token) :
     :return: returns closure that can convert channel name to id.
     """
     url = get_url('channels.list')
-    payload = { 'token' : token }
-    response = requests.post(url, params = payload)
+    payload = {'token': token}
+    response = requests.post(url, params=payload)
     data = to_json(response)['channels']
     mapper = dict([(e['name'], e['id']) for e in data])
-    def mapping(name) : 
+
+    def mapping(name):
         return mapper[name]
     return mapping
- 
-def get_delete_candidate(token, channel, count) :
+
+
+def get_delete_candidate(token, channel, count):
     """
     Get candidates of specific channel id.
 
@@ -52,12 +57,13 @@ def get_delete_candidate(token, channel, count) :
     url = get_url('channels.history')
     get_channel_id = create_channel_id_mapper(token)
     channel_id = get_channel_id(channel)
-    payload = { 'token' : token, 'channel' : channel_id , 'count' : count}
-    response = requests.post(url, params = payload)
+    payload = {'token': token, 'channel': channel_id, 'count': count}
+    response = requests.post(url, params=payload)
     ret = [(e['ts'], e['text']) for e in to_json(response)['messages']]
     return ret[::-1]
-    
-def delete_candidates(token, channel, candidates) :
+
+
+def delete_candidates(token, channel, candidates):
     """
     delete messages.
 
@@ -69,10 +75,11 @@ def delete_candidates(token, channel, candidates) :
     get_channel_id = create_channel_id_mapper(token)
     channel_id = get_channel_id(channel)
     for ts, _ in candidates:
-        payload = { 'token' : token, 'channel' : channel_id , 'ts' : ts}
-        requests.post(url, params = payload)
-    
-    return   
+        payload = {'token': token, 'channel': channel_id, 'ts': ts}
+        requests.post(url, params=payload)
+
+    return
+
 
 def query_yes_no(question):
     """
@@ -92,19 +99,20 @@ def query_yes_no(question):
         else:
             print("Please respond with 'yes' or 'no' (or 'y' or 'n').")
 
-def main() :
+
+def main():
     token = 'your_token'
     channel_name = 'general'
     count = 25
 
     candidates = get_delete_candidate(token, channel_name, count)
     print('-' * 80)
-    for _, text in candidates :
+    for _, text in candidates:
         print(text)
-    print('-' * 80)    
+    print('-' * 80)
     is_continue = query_yes_no('Delete these?')
-   
-    if is_continue :
+
+    if is_continue:
         delete_candidates(token, channel_name, candidates)
         print('delete messages.')
         return
@@ -112,5 +120,6 @@ def main() :
     print('stop deletion.')
     return
 
-if __name__ == '__main__' :
+
+if __name__ == '__main__':
     main()
